@@ -1,0 +1,87 @@
+##############################################################################
+# Deployment – version B (canary / experiment)
+#
+# Identical spec to v1 except for the version label and APP_VERSION env var.
+# In a real scenario this image tag would point to a newer build.
+##############################################################################
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: yosoy-v2
+  namespace: ab-demo
+  labels:
+    app.kubernetes.io/name: yosoy
+    app.kubernetes.io/version: v2
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/part-of: ab-demo
+spec:
+  replicas: 1          # Fewer replicas for the canary slice
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: yosoy
+      app.kubernetes.io/version: v2
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: yosoy
+        app.kubernetes.io/version: v2
+        app.kubernetes.io/component: backend
+        app.kubernetes.io/part-of: ab-demo
+    spec:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: yosoy
+              app.kubernetes.io/version: v2
+      containers:
+        - name: yosoy
+          image: ghcr.io/lukaszbudnik/yosoy:latest   # swap tag to test a real new build
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+          env:
+            - name: YOSOY_SHOW_ENVS
+              value: "true"
+            - name: APP_VERSION
+              value: "v2"
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "32Mi"
+            limits:
+              cpu: "200m"
+              memory: "64Mi"
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 65534
+            capabilities:
+              drop: ["ALL"]
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault

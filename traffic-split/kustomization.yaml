@@ -1,0 +1,35 @@
+##############################################################################
+# kustomization.yaml
+#
+# Apply everything at once:
+#   kubectl apply -k .
+#
+# Or apply just the strategy you want to test:
+#   kubectl apply -f 00-namespace.yaml \
+#                 -f 01-deployment-v1.yaml \
+#                 -f 02-deployment-v2.yaml \
+#                 -f 03-services.yaml \
+#                 -f 04-gateway.yaml \
+#                 -f 05-httproute-weighted.yaml   # ← pick one strategy
+##############################################################################
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: ab-demo
+
+resources:
+  - 00-namespace.yaml
+  - 01-deployment-v1.yaml
+  - 02-deployment-v2.yaml
+  - 03-services.yaml
+  - 04-gateway.yaml
+  # Choose ONE or ALL of the route strategies below.
+  # Running all three simultaneously is fine for learning –
+  # they use different hostnames so they don't conflict.
+  - 05-httproute-weighted.yaml
+  - 06-httproute-header.yaml
+  - 07-httproute-smart.yaml
+
+commonLabels:
+  app.kubernetes.io/managed-by: kustomize
+  app.kubernetes.io/part-of: ab-demo

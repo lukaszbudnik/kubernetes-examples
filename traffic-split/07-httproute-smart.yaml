@@ -1,0 +1,100 @@
+##############################################################################
+# HTTPRoute – Strategy 3: Weighted split + header override (production pattern)
+#
+# The most realistic production A/B setup:
+#   • Regular users hit the weighted split (e.g. 90 / 10)
+#   • QA / internal users can force a specific variant via a header
+#   • A response header is injected so clients can log which variant they got
+#
+# This single HTTPRoute combines header matching and weighted backendRefs.
+#
+# Test:
+#   # Force v1 (internal/QA override)
+#   curl -s http://<GATEWAY_IP>/ -H "Host: smart.example.com" \
+#        -H "X-Force-Version: v1" -v 2>&1 | grep -E "< X-Served-By|APP_VERSION"
+#
+#   # Force v2 (internal/QA override)
+#   curl -s http://<GATEWAY_IP>/ -H "Host: smart.example.com" \
+#        -H "X-Force-Version: v2" -v 2>&1 | grep -E "< X-Served-By|APP_VERSION"
+#
+#   # Normal user – weighted split applies
+#   for i in $(seq 1 20); do
+#     curl -s http://<GATEWAY_IP>/ -H "Host: smart.example.com" \
+#          | python3 -m json.tool | grep APP_VERSION
+#   done
+##############################################################################
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: ab-smart-routing
+  namespace: ab-demo
+  labels:
+    app.kubernetes.io/name: ab-smart-routing
+    app.kubernetes.io/component: httproute
+    app.kubernetes.io/part-of: ab-demo
+  annotations:
+    ab-demo/strategy: "weighted-split-with-header-override"
+spec:
+  parentRefs:
+    - name: ab-demo-gateway
+      namespace: ab-demo
+      sectionName: http
+  hostnames:
+    - "smart.example.com"
+  rules:
+    ##########################################################################
+    # Rule 1 – QA / internal force-override to v1
+    ##########################################################################
+    - name: force-v1
+      matches:
+        - headers:
+            - name: "X-Force-Version"
+              value: "v1"
+      filters:
+        # Inject a response header so the caller knows which backend responded
+        - type: ResponseHeaderModifier
+          responseHeaderModifier:
+            add:
+              - name: "X-Served-By"
+                value: "yosoy-v1-forced"
+      backendRefs:
+        - name: yosoy-v1
+          port: 80
+
+    ##########################################################################
+    # Rule 2 – QA / internal force-override to v2
+    ##########################################################################
+    - name: force-v2
+      matches:
+        - headers:
+            - name: "X-Force-Version"
+              value: "v2"
+      filters:
+        - type: ResponseHeaderModifier
+          responseHeaderModifier:
+            add:
+              - name: "X-Served-By"
+                value: "yosoy-v2-forced"
+      backendRefs:
+        - name: yosoy-v2
+          port: 80
+
+    ##########################################################################
+    # Rule 3 – Normal traffic: weighted split
+    # No header match → evaluated last → weighted 90/10
+    ##########################################################################
+    - name: weighted-split
+      filters:
+        # Add a header so clients can see the split is active
+        - type: ResponseHeaderModifier
+          responseHeaderModifier:
+            add:
+              - name: "X-Served-By"
+                value: "weighted-split"
+      backendRefs:
+        - name: yosoy-v1
+          port: 80
+          weight: 90
+        - name: yosoy-v2
+          port: 80
+          weight: 10

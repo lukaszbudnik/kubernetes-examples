@@ -1,0 +1,48 @@
+##############################################################################
+# HTTPRoute – Strategy 1: Weighted traffic split (canary / gradual rollout)
+#
+# This is the simplest A/B pattern: split ALL traffic between two backends
+# using integer weights.  The ratio is weight(v1) : weight(v2).
+#
+# Current split  →  90 % stable (v1),  10 % canary (v2)
+#
+# To gradually promote v2, edit the weights and re-apply:
+#   50 / 50  →  half-way
+#   0 / 100  →  full cut-over (then delete this route and rename yosoy-v2 → yosoy-v1)
+#
+# Test:
+#   for i in $(seq 1 20); do
+#     curl -s http://<GATEWAY_IP>/ | python3 -m json.tool | grep APP_VERSION
+#   done
+#   # Expect ~18 responses showing v1, ~2 showing v2
+##############################################################################
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: ab-weighted-split
+  namespace: ab-demo
+  labels:
+    app.kubernetes.io/name: ab-weighted-split
+    app.kubernetes.io/component: httproute
+    app.kubernetes.io/part-of: ab-demo
+  annotations:
+    # Human-readable documentation embedded in the object
+    ab-demo/strategy: "weighted-split"
+    ab-demo/v1-weight: "90"
+    ab-demo/v2-weight: "10"
+spec:
+  parentRefs:
+    - name: ab-demo-gateway
+      namespace: ab-demo
+      sectionName: http   # attach to the named listener defined in Gateway
+  hostnames:
+    - "app.example.com"   # adjust to your actual hostname or remove for wildcard
+  rules:
+    - name: weighted-ab-split   # named rules make status conditions and logs easier to read (GA in v1.4)
+      backendRefs:
+        - name: yosoy-v1
+          port: 80
+          weight: 90            # 90 % of requests
+        - name: yosoy-v2
+          port: 80
+          weight: 10            # 10 % of requests

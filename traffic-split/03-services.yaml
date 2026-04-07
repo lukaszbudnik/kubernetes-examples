@@ -1,0 +1,49 @@
+##############################################################################
+# Service – version A (stable)
+# ClusterIP is the right choice here; the Gateway implementation talks to it
+# directly via EndpointSlices – no NodePort or LoadBalancer needed.
+##############################################################################
+apiVersion: v1
+kind: Service
+metadata:
+  name: yosoy-v1
+  namespace: ab-demo
+  labels:
+    app.kubernetes.io/name: yosoy
+    app.kubernetes.io/version: v1
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/part-of: ab-demo
+spec:
+  selector:
+    app.kubernetes.io/name: yosoy
+    app.kubernetes.io/version: v1
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+      protocol: TCP
+  type: ClusterIP
+---
+##############################################################################
+# Service – version B (canary)
+##############################################################################
+apiVersion: v1
+kind: Service
+metadata:
+  name: yosoy-v2
+  namespace: ab-demo
+  labels:
+    app.kubernetes.io/name: yosoy
+    app.kubernetes.io/version: v2
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/part-of: ab-demo
+spec:
+  selector:
+    app.kubernetes.io/name: yosoy
+    app.kubernetes.io/version: v2
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+      protocol: TCP
+  type: ClusterIP

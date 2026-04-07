@@ -1,0 +1,68 @@
+##############################################################################
+# HTTPRoute – Strategy 2: Header-based routing (explicit opt-in)
+#
+# True A/B testing: the client (or an upstream auth proxy that knows the
+# user's cohort) sends a custom header to select the variant.
+#
+# X-Ab-Group: v2   →  routed to yosoy-v2 (experiment group)
+# (no header)      →  routed to yosoy-v1 (control group)
+#
+# This pattern is ideal when you:
+#   • want 100 % deterministic routing for a specific user segment
+#   • are driving the split from a feature-flag service or API gateway
+#   • need to test with internal users before exposing to real traffic
+#
+# Test:
+#   # Control group (v1)
+#   curl -s http://<GATEWAY_IP>/ -H "Host: app.example.com" \
+#        | python3 -m json.tool | grep APP_VERSION
+#
+#   # Experiment group (v2)
+#   curl -s http://<GATEWAY_IP>/ -H "Host: app.example.com" \
+#        -H "X-Ab-Group: v2" \
+#        | python3 -m json.tool | grep APP_VERSION
+##############################################################################
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: ab-header-routing
+  namespace: ab-demo
+  labels:
+    app.kubernetes.io/name: ab-header-routing
+    app.kubernetes.io/component: httproute
+    app.kubernetes.io/part-of: ab-demo
+  annotations:
+    ab-demo/strategy: "header-based"
+    ab-demo/trigger-header: "X-Ab-Group"
+spec:
+  parentRefs:
+    - name: ab-demo-gateway
+      namespace: ab-demo
+      sectionName: http
+  hostnames:
+    - "ab.example.com"    # different hostname from weighted route to avoid conflicts
+  rules:
+    ##########################################################################
+    # Rule 1 – experiment group
+    # Evaluated FIRST because it is more specific (has a header match).
+    # Gateway API evaluates rules in order; first match wins.
+    ##########################################################################
+    - name: experiment-group-v2
+      matches:
+        - headers:
+            - name: "X-Ab-Group"
+              value: "v2"
+      backendRefs:
+        - name: yosoy-v2
+          port: 80
+          weight: 100
+
+    ##########################################################################
+    # Rule 2 – control group (catch-all, no match conditions)
+    # All traffic that didn't match Rule 1 lands here.
+    ##########################################################################
+    - name: control-group-v1
+      backendRefs:
+        - name: yosoy-v1
+          port: 80
+          weight: 100

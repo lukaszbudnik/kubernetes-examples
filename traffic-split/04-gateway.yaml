@@ -1,0 +1,54 @@
+##############################################################################
+# GatewayClass
+#
+# A GatewayClass is cluster-scoped and names the controller that will
+# provision Gateways of this class.  The controllerName below is the
+# well-known name for Envoy Gateway – replace with whatever implementation
+# you have installed (nginx, istio, traefik, kong, etc.).
+#
+# Common controllerName values:
+#   Envoy Gateway  → gateway.envoyproxy.io/gatewayclass-controller
+#   Nginx          → k8s.nginx.org/nginx-gateway-controller
+#   Istio          → istio.io/gateway-controller
+#   Traefik        → traefik.io/gateway-controller
+##############################################################################
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: ab-demo-gwclass
+  labels:
+    app.kubernetes.io/part-of: ab-demo
+spec:
+  controllerName: gateway.envoyproxy.io/gatewayclass-controller
+  description: "GatewayClass for the A/B testing demo"
+---
+##############################################################################
+# Gateway
+#
+# A Gateway is namespace-scoped and represents a single listener (or set of
+# listeners) managed by the GatewayClass above.  Placing it in the same
+# namespace as the routes and services keeps the demo self-contained.
+#
+# The allowedRoutes stanza is the Gateway API's built-in RBAC mechanism:
+# it restricts which namespaces may attach HTTPRoutes to this Gateway.
+# Using Same means only routes in the ab-demo namespace are accepted –
+# this is the safe default for a dedicated team namespace.
+##############################################################################
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: ab-demo-gateway
+  namespace: ab-demo
+  labels:
+    app.kubernetes.io/name: ab-demo-gateway
+    app.kubernetes.io/component: gateway
+    app.kubernetes.io/part-of: ab-demo
+spec:
+  gatewayClassName: ab-demo-gwclass
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 80
+      allowedRoutes:
+        namespaces:
+          from: Same    # only HTTPRoutes in ab-demo namespace may attach

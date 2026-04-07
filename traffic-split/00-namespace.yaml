@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ab-demo
+  labels:
+    # Required for Gateway API implementations that watch specific namespaces
+    kubernetes.io/metadata.name: ab-demo
