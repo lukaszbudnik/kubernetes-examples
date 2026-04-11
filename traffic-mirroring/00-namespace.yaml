@@ -1,0 +1,10 @@
+##############################################################################
+# Namespace
+##############################################################################
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ab-demo
+  labels:
+    app.kubernetes.io/name: ab-demo
+    app.kubernetes.io/part-of: ab-demo

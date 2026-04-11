@@ -1,0 +1,76 @@
+##############################################################################
+# Deployment – mirroring (receives mirrored traffic, response discarded)
+##############################################################################
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: yosoy-mirroring
+  namespace: ab-demo
+  labels:
+    app.kubernetes.io/name: yosoy
+    app.kubernetes.io/version: mirroring
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/part-of: ab-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: yosoy
+      app.kubernetes.io/version: mirroring
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: yosoy
+        app.kubernetes.io/version: mirroring
+        app.kubernetes.io/component: backend
+        app.kubernetes.io/part-of: ab-demo
+    spec:
+      containers:
+        - name: yosoy
+          image: ghcr.io/lukaszbudnik/yosoy:latest
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+          env:
+            - name: YOSOY_SHOW_ENVS
+              value: "true"
+            - name: APP_VERSION
+              value: "mirroring"
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "32Mi"
+            limits:
+              cpu: "200m"
+              memory: "64Mi"
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 65534
+            capabilities:
+              drop: ["ALL"]
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault

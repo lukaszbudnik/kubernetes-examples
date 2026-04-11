@@ -1,0 +1,47 @@
+##############################################################################
+# HTTPRoute – Traffic Mirroring
+#
+# Requests are sent to both primary (v1) and mirroring services.
+# Only the primary service response is returned to the client.
+# The mirroring service response is discarded (mirrored).
+#
+# Use cases:
+#   • Test new versions in production with real traffic
+#   • Compare responses between versions without affecting users
+#   • Load testing with real traffic patterns
+#
+# Test:
+#   curl -s http://$GATEWAY_IP/ -H "Host: mirroring.example.com"
+#   # Check logs on mirroring pod to see mirrored requests:
+#   kubectl logs -n ab-demo deploy/yosoy-mirroring
+##############################################################################
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: ab-mirroring
+  namespace: ab-demo
+  labels:
+    app.kubernetes.io/name: ab-mirroring
+    app.kubernetes.io/component: httproute
+    app.kubernetes.io/part-of: ab-demo
+  annotations:
+    ab-demo/strategy: "traffic-mirroring"
+spec:
+  parentRefs:
+    - name: ab-demo-gateway
+      namespace: ab-demo
+      sectionName: http
+  hostnames:
+    - "mirroring.example.com"
+  rules:
+    - name: mirror-traffic
+      backendRefs:
+        - name: yosoy-v1
+          port: 80
+          weight: 100
+      filters:
+        - type: RequestMirror
+          requestMirror:
+            backendRef:
+              name: yosoy-mirroring
+              port: 80

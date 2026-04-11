@@ -1,46 +1,12 @@
 # Kubernetes Gateway API – A/B Testing Demo
 
+Routes traffic across two service versions for controlled experimentation — 
+split by weight for gradual rollouts, or by request header for explicit cohort targeting.
+
 Uses **[yosoy](https://github.com/lukaszbudnik/yosoy)** as a self-describing mock HTTP
 backend. yosoy responds to every request with JSON that includes the pod name, env vars,
 and request headers — making it easy to verify which version the Gateway is routing to
 without any extra tooling.
-
----
-
-## Prerequisites
-
-### 1. Install the Gateway API CRDs
-
-Gateway API ships as CRDs — they are not bundled with Kubernetes itself.
-
-```bash
-# Standard channel (GA resources: GatewayClass, Gateway, HTTPRoute)
-kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.0/standard-install.yaml
-
-# Verify
-kubectl get crd | grep gateway.networking.k8s.io
-```
-
-### 2. Install a Gateway controller
-
-Pick one that matches your environment. The `GatewayClass.spec.controllerName` in
-`04-gateway.yaml` must match the controller you install.
-
-| Controller       | Install guide                                          | controllerName                                         |
-|------------------|--------------------------------------------------------|--------------------------------------------------------|
-| **Envoy Gateway**| https://gateway.envoyproxy.io/docs/                    | `gateway.envoyproxy.io/gatewayclass-controller`        |
-| **Nginx Gateway**| https://docs.nginx.com/nginx-gateway-fabric/           | `k8s.nginx.org/nginx-gateway-controller`               |
-| **Istio**        | https://istio.io/latest/docs/tasks/traffic-management/ | `istio.io/gateway-controller`                          |
-| **Traefik**      | https://doc.traefik.io/traefik/providers/kubernetes-gateway/ | `traefik.io/gateway-controller`               |
-
-Quick start with Envoy Gateway on a local cluster:
-```bash
-helm install eg oci://docker.io/envoyproxy/gateway-helm \
-  --version v1.3.0 \
-  -n envoy-gateway-system --create-namespace
-```
-
----
 
 ## Deploy
 
@@ -54,7 +20,9 @@ kubectl apply -f 01-deployment-v1.yaml
 kubectl apply -f 02-deployment-v2.yaml
 kubectl apply -f 03-services.yaml
 kubectl apply -f 04-gateway.yaml
-kubectl apply -f 05-httproute-weighted.yaml   # or 06, or 07
+kubectl apply -f 05-httproute-weighted.yaml
+kubectl apply -f 06-httproute-header.yaml
+kubectl apply -f 07-httproute-smart.yaml
 ```
 
 ### Check status

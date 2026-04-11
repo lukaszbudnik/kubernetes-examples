@@ -14,19 +14,53 @@ A/B testing and weighted traffic splitting strategies:
 
 See [traffic-split/README.md](traffic-split/README.md) for details.
 
+### [traffic-mirroring/](traffic-mirroring/)
+
+Traffic mirroring:
+
+- Copies requests to a mirroring service
+- Primary service returns response to client
+- Mirroring response is discarded
+- Useful for testing with production traffic
+
+See [traffic-mirroring/README.md](traffic-mirroring/README.md) for details.
+
+---
+
 ## Prerequisites
 
-1. Install Gateway API CRDs:
-   ```bash
-   kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.0/standard-install.yaml
-   ```
+### 1. Install the Gateway API CRDs
 
-2. Install Envoy Gateway:
-   ```bash
-   helm install eg oci://docker.io/envoyproxy/gateway-helm \
-     --version v1.3.0 \
-     -n envoy-gateway-system --create-namespace
-   ```
+Gateway API ships as CRDs — they are not bundled with Kubernetes itself.
+
+```bash
+# Standard channel (GA resources: GatewayClass, Gateway, HTTPRoute)
+kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.1/standard-install.yaml
+
+# Verify
+kubectl get crd | grep gateway.networking.k8s.io
+```
+
+### 2. Install a Gateway controller
+
+Pick one that matches your environment. The `GatewayClass.spec.controllerName` in
+gateway yaml must match the controller you install.
+
+| Controller       | Install guide                                          | controllerName                                         |
+|------------------|--------------------------------------------------------|--------------------------------------------------------|
+| **Envoy Gateway**| https://gateway.envoyproxy.io/docs/                    | `gateway.envoyproxy.io/gatewayclass-controller`        |
+| **Nginx Gateway**| https://docs.nginx.com/nginx-gateway-fabric/           | `k8s.nginx.org/nginx-gateway-controller`               |
+| **Istio**        | https://istio.io/latest/docs/tasks/traffic-management/ | `istio.io/gateway-controller`                          |
+| **Traefik**      | https://doc.traefik.io/traefik/providers/kubernetes-gateway/ | `traefik.io/gateway-controller`               |
+
+Quick start with Envoy Gateway on a local cluster:
+```bash
+helm install eg oci://docker.io/envoyproxy/gateway-helm \
+  --version v1.7.1 \
+  -n envoy-gateway-system --create-namespace
+```
+
+---
 
 ## Quick Start
 

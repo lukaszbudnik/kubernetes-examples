@@ -1,0 +1,47 @@
+##############################################################################
+# Service – primary (v1)
+##############################################################################
+apiVersion: v1
+kind: Service
+metadata:
+  name: yosoy-v1
+  namespace: ab-demo
+  labels:
+    app.kubernetes.io/name: yosoy
+    app.kubernetes.io/version: v1
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/part-of: ab-demo
+spec:
+  selector:
+    app.kubernetes.io/name: yosoy
+    app.kubernetes.io/version: v1
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+      protocol: TCP
+  type: ClusterIP
+---
+##############################################################################
+# Service – mirroring
+##############################################################################
+apiVersion: v1
+kind: Service
+metadata:
+  name: yosoy-mirroring
+  namespace: ab-demo
+  labels:
+    app.kubernetes.io/name: yosoy
+    app.kubernetes.io/version: mirroring
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/part-of: ab-demo
+spec:
+  selector:
+    app.kubernetes.io/name: yosoy
+    app.kubernetes.io/version: mirroring
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+      protocol: TCP
+  type: ClusterIP
