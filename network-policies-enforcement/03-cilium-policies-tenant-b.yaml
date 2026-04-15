@@ -1,0 +1,61 @@
+##############################################################################
+# tenant-b network policies
+#
+# Identical structure to tenant-a — default deny, intra-tenant allow,
+# and egress to metadata frontend only.
+##############################################################################
+
+# --- Rule 1: default deny ---
+apiVersion: "cilium.io/v2"
+kind: CiliumNetworkPolicy
+metadata:
+  name: default-deny
+  namespace: tenant-b
+spec:
+  endpointSelector: {}
+  ingress: []
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            "k8s:io.kubernetes.pod.namespace": kube-system
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+---
+# --- Rule 2: intra-tenant allow ---
+apiVersion: "cilium.io/v2"
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-intra-tenant
+  namespace: tenant-b
+spec:
+  endpointSelector: {}
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            app.kubernetes.io/part-of: tenant-b
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            app.kubernetes.io/part-of: tenant-b
+---
+# --- Rule 3: allow tenant-b frontend → metadata frontend (egress) ---
+apiVersion: "cilium.io/v2"
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-egress-to-metadata-frontend
+  namespace: tenant-b
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: frontend
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            app.kubernetes.io/name: frontend
+            "k8s:io.kubernetes.pod.namespace": metadata
+      toPorts:
+        - ports:
+            - port: "80"
+              protocol: TCP

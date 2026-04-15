@@ -1,37 +1,69 @@
-# Kubernetes Gateway API - Traffic Routing Strategies
+# Advanced Kubernetes Design Patterns
 
-Demonstrates different traffic routing strategies using Kubernetes Gateway API with Envoy Gateway.
+A collection of practical examples demonstrating advanced Kubernetes design patterns and architectures for production-grade deployments.
 
-## Directories
+## Examples
 
 ### [traffic-split/](traffic-split/)
 
-A/B testing and weighted traffic splitting strategies:
+**Traffic routing and A/B testing strategies** using Kubernetes Gateway API:
 
-- **Strategy 1**: Weighted split (90% v1, 10% v2)
-- **Strategy 2**: Header-based routing (X-Ab-Group header)
-- **Strategy 3**: Weighted split + header override for QA
+- Weighted traffic splitting (canary deployments, gradual rollouts)
+- Header-based routing (A/B testing, feature flags)
+- Combined strategies for sophisticated traffic management
 
 See [traffic-split/README.md](traffic-split/README.md) for details.
 
 ### [traffic-mirroring/](traffic-mirroring/)
 
-Traffic mirroring:
+**Traffic mirroring and shadowing** using Kubernetes Gateway API:
 
-- Copies requests to a mirroring service
-- Primary service returns response to client
-- Mirroring response is discarded
-- Useful for testing with production traffic
+- Mirror production traffic to a secondary service
+- Test new versions with real traffic without impacting users
+- Validate changes before full rollout
 
 See [traffic-mirroring/README.md](traffic-mirroring/README.md) for details.
+
+### [network-policies-enforcement/](network-policies-enforcement/)
+
+**Multi-tenant isolation and network security** using Cilium Network Policies:
+
+- Enforce zero-trust networking within a cluster
+- Isolate tenants and prevent cross-namespace access
+- Allow-list specific cross-tenant communication patterns
+- Demonstrate the problem and solution with practical tests
+
+See [network-policies-enforcement/README.md](network-policies-enforcement/README.md) for details.
 
 ---
 
 ## Prerequisites
 
-### 1. Install the Gateway API CRDs
+### Install Cilium (optional, required for network-policies-enforcement)
 
-Gateway API ships as CRDs — they are not bundled with Kubernetes itself.
+Cilium provides advanced networking and security policies. Below are setup instructions for macOS with minikube.
+
+```bash
+# 1. Install the Cilium CLI
+brew install cilium-cli
+
+# 2. Start minikube without a CNI (so you can install Cilium yourself)
+#    Use the socket_vmnet driver for best compatibility on Apple Silicon
+minikube start --network-plugin=cni --cni=false
+
+# 3. Install Cilium
+cilium install
+
+# 4. Verify
+cilium status
+
+# 5. Optional: run connectivity test (takes some time)
+cilium connectivity test
+```
+
+### Install Gateway API CRDs (required for traffic-split and traffic-mirroring)
+
+Gateway API ships as CRDs and is not bundled with Kubernetes.
 
 ```bash
 # Standard channel (GA resources: GatewayClass, Gateway, HTTPRoute)
@@ -41,10 +73,9 @@ kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/downloa
 kubectl get crd | grep gateway.networking.k8s.io
 ```
 
-### 2. Install a Gateway controller
+### Install a Gateway Controller (required for traffic-split and traffic-mirroring)
 
-Pick one that matches your environment. The `GatewayClass.spec.controllerName` in
-gateway yaml must match the controller you install.
+Choose a controller that matches your environment. The `GatewayClass.spec.controllerName` in gateway YAML must match the controller you install.
 
 | Controller       | Install guide                                          | controllerName                                         |
 |------------------|--------------------------------------------------------|--------------------------------------------------------|
@@ -54,6 +85,7 @@ gateway yaml must match the controller you install.
 | **Traefik**      | https://doc.traefik.io/traefik/providers/kubernetes-gateway/ | `traefik.io/gateway-controller`               |
 
 Quick start with Envoy Gateway on a local cluster:
+
 ```bash
 helm install eg oci://docker.io/envoyproxy/gateway-helm \
   --version v1.7.1 \
@@ -64,17 +96,24 @@ helm install eg oci://docker.io/envoyproxy/gateway-helm \
 
 ## Quick Start
 
-Choose a strategy:
+Deploy an example:
 
 ```bash
-# Traffic splitting (weighted/header-based)
+# Traffic splitting and routing
 kubectl apply -k traffic-split/
 
 # Traffic mirroring
 kubectl apply -k traffic-mirroring/
+
+# Multi-tenant network isolation
+kubectl apply -k network-policies-enforcement/
 ```
 
-## Gateway API Concepts
+---
+
+## Key Concepts
+
+### Traffic Management (Gateway API)
 
 | Concept | Description |
 |---------|-------------|
@@ -83,6 +122,16 @@ kubectl apply -k traffic-mirroring/
 | HTTPRoute | Defines routing rules for HTTP traffic |
 | BackendRef | Reference to a Service |
 | RequestMirror | Mirrors traffic to a secondary backend |
-| ResponseHeaderModifier | Adds/modifies response headers |
 | Weighted routing | Split traffic by weight percentage |
 | Header matching | Route based on request headers |
+
+### Network Security (Cilium)
+
+| Concept | Description |
+|---------|-------------|
+| CiliumNetworkPolicy | Fine-grained network access control |
+| Default-deny | Deny all traffic by default, allow explicitly |
+| Endpoint selector | Target pods by labels |
+| Ingress/Egress rules | Control inbound and outbound traffic |
+| Multi-tenant isolation | Prevent cross-namespace communication |
+| Allow-list patterns | Permit specific cross-tenant flows |

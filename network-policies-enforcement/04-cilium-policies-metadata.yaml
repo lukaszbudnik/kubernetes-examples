@@ -1,0 +1,70 @@
+##############################################################################
+# metadata namespace network policies
+#
+# Rule 1: Default deny all ingress and egress (DNS egress excepted).
+#
+# Rule 2: Allow intra-metadata traffic (frontend ↔ backend).
+#
+# Rule 3: Allow metadata frontend to accept ingress from tenant-a frontend
+#         and tenant-b frontend — the ingress side of the cross-tenant
+#         allow-list. metadata never initiates connections into tenant
+#         namespaces so there is no egress rule for that direction.
+##############################################################################
+
+# --- Rule 1: default deny ---
+apiVersion: "cilium.io/v2"
+kind: CiliumNetworkPolicy
+metadata:
+  name: default-deny
+  namespace: metadata
+spec:
+  endpointSelector: {}
+  ingress: []
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            "k8s:io.kubernetes.pod.namespace": kube-system
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+---
+# --- Rule 2: intra-metadata allow ---
+apiVersion: "cilium.io/v2"
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-intra-metadata
+  namespace: metadata
+spec:
+  endpointSelector: {}
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            app.kubernetes.io/part-of: metadata
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            app.kubernetes.io/part-of: metadata
+---
+# --- Rule 3: allow ingress to metadata frontend from tenant frontends ---
+apiVersion: "cilium.io/v2"
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-ingress-from-tenant-frontends
+  namespace: metadata
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: frontend   # only metadata frontend receives this traffic
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            app.kubernetes.io/name: frontend
+            "k8s:io.kubernetes.pod.namespace": tenant-a
+        - matchLabels:
+            app.kubernetes.io/name: frontend
+            "k8s:io.kubernetes.pod.namespace": tenant-b
+      toPorts:
+        - ports:
+            - port: "80"
+              protocol: TCP

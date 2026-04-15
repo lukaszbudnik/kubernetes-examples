@@ -1,0 +1,68 @@
+##############################################################################
+# tenant-a network policies
+#
+# Rule 1: Default deny all ingress and egress for every pod in tenant-a.
+#         An empty endpointSelector ({}) matches all pods in the namespace.
+#         No ingress/egress rules = nothing is allowed.
+#
+# Rule 2: Allow intra-tenant traffic in both directions between frontend
+#         and backend within tenant-a.
+#
+# Rule 3: Allow tenant-a frontend to reach metadata frontend (egress side).
+#         The ingress side of this is handled in 03-cilium-policies-metadata.yaml.
+##############################################################################
+
+# --- Rule 1: default deny ---
+apiVersion: "cilium.io/v2"
+kind: CiliumNetworkPolicy
+metadata:
+  name: default-deny
+  namespace: tenant-a
+spec:
+  endpointSelector: {}   # matches ALL pods in this namespace
+  ingress: []            # no ingress rules = deny all ingress
+  egress:                # allow DNS (port 53) so pods can still resolve names,
+    - toEndpoints:       # but deny everything else
+        - matchLabels:
+            "k8s:io.kubernetes.pod.namespace": kube-system
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+---
+# --- Rule 2: intra-tenant allow ---
+apiVersion: "cilium.io/v2"
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-intra-tenant
+  namespace: tenant-a
+spec:
+  endpointSelector: {}   # applies to all pods in tenant-a
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            app.kubernetes.io/part-of: tenant-a   # only from within tenant-a
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            app.kubernetes.io/part-of: tenant-a   # only to within tenant-a
+---
+# --- Rule 3: allow tenant-a frontend → metadata frontend (egress) ---
+apiVersion: "cilium.io/v2"
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-egress-to-metadata-frontend
+  namespace: tenant-a
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: frontend            # only tenant-a frontend pods
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            app.kubernetes.io/name: frontend
+            "k8s:io.kubernetes.pod.namespace": metadata
+      toPorts:
+        - ports:
+            - port: "80"
+              protocol: TCP

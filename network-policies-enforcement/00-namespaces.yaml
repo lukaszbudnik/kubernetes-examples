@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: tenant-a
+  labels:
+    kubernetes.io/metadata.name: tenant-a
+    tenant: a
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: tenant-b
+  labels:
+    kubernetes.io/metadata.name: tenant-b
+    tenant: b
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: metadata
+  labels:
+    kubernetes.io/metadata.name: metadata
+    tenant: metadata
