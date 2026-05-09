@@ -1,0 +1,47 @@
+##############################################################################
+# RBAC – leader-elector
+#
+# The leader-elector sidecar needs permissions to manage the resource
+# used for the election (typically Endpoints or Leases).
+##############################################################################
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: leader-elector
+  namespace: leader-election
+  labels:
+    app.kubernetes.io/name: leader-elector
+    app.kubernetes.io/part-of: leader-election
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: leader-elector
+  namespace: leader-election
+  labels:
+    app.kubernetes.io/name: leader-elector
+    app.kubernetes.io/part-of: leader-election
+rules:
+  - apiGroups: [""]
+    resources: ["endpoints"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: leader-elector
+  namespace: leader-election
+  labels:
+    app.kubernetes.io/name: leader-elector
+    app.kubernetes.io/part-of: leader-election
+subjects:
+  - kind: ServiceAccount
+    name: leader-elector
+    namespace: leader-election
+roleRef:
+  kind: Role
+  name: leader-elector
+  apiGroup: rbac.authorization.k8s.io

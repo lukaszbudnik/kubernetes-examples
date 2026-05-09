@@ -1,0 +1,11 @@
+##############################################################################
+# Namespace
+##############################################################################
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: leader-election
+  labels:
+    app.kubernetes.io/name: leader-election
+    app.kubernetes.io/part-of: leader-election
+

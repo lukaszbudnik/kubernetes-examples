@@ -35,6 +35,16 @@ See [traffic-mirroring/README.md](traffic-mirroring/README.md) for details.
 
 See [network-policies-enforcement/README.md](network-policies-enforcement/README.md) for details.
 
+### [leader-election/](leader-election/)
+
+**High availability and leader election** using Lease API and sidecar pattern:
+
+- Demonstrate the sidecar leader election pattern in Kubernetes
+- Use a sidecar to manage election and expose leader status to the main application
+- Ensure only one instance performing leader-specific tasks at a time
+
+See [leader-election/README.md](leader-election/README.md) for details.
+
 ---
 
 ## Prerequisites
@@ -107,6 +117,9 @@ kubectl apply -k traffic-mirroring/
 
 # Multi-tenant network isolation
 kubectl apply -k network-policies-enforcement/
+
+# High availability leader election
+kubectl apply -k leader-elector/
 ```
 
 ---

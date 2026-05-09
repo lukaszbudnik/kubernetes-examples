@@ -1,0 +1,29 @@
+##############################################################################
+# ConfigMap – leader-elector script
+#
+# This script is mounted into the app-stub container and checks the status
+# of the leader election via the sidecar-elector sidecar.
+##############################################################################
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: leader-elector-script
+  namespace: leader-election
+  labels:
+    app.kubernetes.io/name: leader-elector
+    app.kubernetes.io/part-of: leader-election
+data:
+  run.sh: |
+    #!/bin/sh
+    echo "Starting leader-elector app"
+    while true; do
+      # Extract leader name from JSON response {"name":"pod-name"}
+      LEADER=$(wget -qO- http://localhost:4040 | sed -n 's/.*"name":"\([^"]*\)".*/\1/p')
+      DATETIME=$(date +"%Y-%m-%dT%H:%M:%S%z")
+      if [ "$LEADER" = "$MY_POD_NAME" ]; then
+        echo "$DATETIME [LEADER] $MY_POD_NAME"
+      else
+        echo "$DATETIME [FOLLOWER] $MY_POD_NAME"
+      fi
+      sleep 2
+    done

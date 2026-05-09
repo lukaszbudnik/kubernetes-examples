@@ -30,6 +30,8 @@ resources:
   - 06-httproute-header.yaml
   - 07-httproute-smart.yaml
 
-commonLabels:
-  app.kubernetes.io/managed-by: kustomize
-  app.kubernetes.io/part-of: ab-demo
+labels:
+  - pairs:
+      app.kubernetes.io/managed-by: kustomize
+      app.kubernetes.io/part-of: ab-demo
+    includeSelectors: true
