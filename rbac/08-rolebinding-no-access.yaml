@@ -1,0 +1,14 @@
+# 08-rolebinding-no-access.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: no-secret-access-binding
+  namespace: herkules
+subjects:
+- kind: ServiceAccount
+  name: no-secret-access-sa
+  namespace: herkules
+roleRef:
+  kind: Role
+  name: no-secret-access-role
+  apiGroup: rbac.authorization.k8s.io

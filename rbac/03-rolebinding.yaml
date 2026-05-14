@@ -1,0 +1,14 @@
+# 03-rolebinding.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: db-secret-access-binding
+  namespace: herkules
+subjects:
+- kind: ServiceAccount
+  name: db-app-sa
+  namespace: herkules
+roleRef:
+  kind: Role
+  name: db-secret-reader
+  apiGroup: rbac.authorization.k8s.io
