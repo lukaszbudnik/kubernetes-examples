@@ -35,6 +35,16 @@ See [traffic-mirroring/README.md](traffic-mirroring/README.md) for details.
 
 See [network-policies-enforcement/README.md](network-policies-enforcement/README.md) for details.
 
+### [rbac/](rbac/)
+
+**Least privilege secret access** using Kubernetes RBAC:
+
+- Create dedicated ServiceAccounts for applications
+- Configure fine-grained Roles for specific resource access
+- Use RoleBindings to securely grant permissions to identities
+
+See [rbac/README.md](rbac/README.md) for details.
+
 ### [leader-election/](leader-election/)
 
 **High availability and leader election** using Lease API and sidecar pattern:
@@ -118,6 +128,9 @@ kubectl apply -k traffic-mirroring/
 # Multi-tenant network isolation
 kubectl apply -k network-policies-enforcement/
 
+# Least privilege RBAC
+kubectl apply -k rbac/
+
 # High availability leader election
 kubectl apply -k leader-elector/
 ```
@@ -148,3 +161,13 @@ kubectl apply -k leader-elector/
 | Ingress/Egress rules | Control inbound and outbound traffic |
 | Multi-tenant isolation | Prevent cross-namespace communication |
 | Allow-list patterns | Permit specific cross-tenant flows |
+
+### Access Control (RBAC)
+
+| Concept | Description |
+|---------|-------------|
+| ServiceAccount | Identity for processes in a Pod |
+| Role | Namespace-scoped set of permissions |
+| RoleBinding | Binds a Role to a ServiceAccount |
+| Least Privilege | Granting only the minimum required permissions |
+| Secret Access | Restricting read access to sensitive data |

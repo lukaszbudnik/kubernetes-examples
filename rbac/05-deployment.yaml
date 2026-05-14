@@ -1,0 +1,28 @@
+# 05-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: db-app
+  namespace: herkules
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: db-app
+  template:
+    metadata:
+      labels:
+        app: db-app
+    spec:
+      serviceAccountName: db-app-sa
+      containers:
+      - name: app-container
+        image: curlimages/curl
+        command: ["sleep", "infinity"]
+        resources:
+          requests:
+            cpu: "50m"
+            memory: "32Mi"
+          limits:
+            cpu: "200m"
+            memory: "64Mi"
