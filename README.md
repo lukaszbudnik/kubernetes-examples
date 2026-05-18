@@ -45,6 +45,17 @@ See [network-policies-enforcement/README.md](network-policies-enforcement/README
 
 See [rbac/README.md](rbac/README.md) for details.
 
+### [deployment-scaling/](deployment-scaling/)
+
+**Horizontal scaling, graceful shutdown, and automated scaling** using Kubernetes Deployments:
+
+- Trapping `SIGTERM` signals for reliable process termination
+- Configuring termination grace periods for long-running tasks
+- Automated scaling using a CronJob and the Kubernetes API
+- Using ConfigMaps to inject application logic into containers
+
+See [deployment-scaling/README.md](deployment-scaling/README.md) for details.
+
 ### [leader-election/](leader-election/)
 
 **High availability and leader election** using Lease API and sidecar pattern:
@@ -131,6 +142,9 @@ kubectl apply -k network-policies-enforcement/
 # Least privilege RBAC
 kubectl apply -k rbac/
 
+# Deployment scaling and graceful shutdown
+kubectl apply -k deployment-scaling/
+
 # High availability leader election
 kubectl apply -k leader-elector/
 ```
@@ -171,3 +185,13 @@ kubectl apply -k leader-elector/
 | RoleBinding | Binds a Role to a ServiceAccount |
 | Least Privilege | Granting only the minimum required permissions |
 | Secret Access | Restricting read access to sensitive data |
+
+### Scaling & Lifecycle
+
+| Concept | Description |
+|---------|-------------|
+| Horizontal Scaling | Adjusting replica count via `kubectl scale` |
+| Automated Scaling | Custom scaling logic via CronJobs and API |
+| SIGTERM | Signal sent to processes for graceful shutdown |
+| Grace Period | Time allowed for cleanup before `SIGKILL` |
+| ConfigMap Volume | Injecting scripts/config from ConfigMaps |

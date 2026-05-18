@@ -1,0 +1,25 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: deployment-scaler-cronjob
+  namespace: flock
+spec:
+  schedule: "*/5 * * * *" # run every 5 minutes
+  concurrencyPolicy: Forbid # never run concurrently to avoid split brain issues
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: deployment-scaler
+          containers:
+          - name: worker-scaler
+            image: curlimages/curl:latest
+            command: ["/bin/sh", "/scripts/scale-deployment.sh"]
+            volumeMounts:
+            - name: script-volume
+              mountPath: /scripts
+          volumes:
+          - name: script-volume
+            configMap:
+              name: deployment-scaler-script
+          restartPolicy: Never

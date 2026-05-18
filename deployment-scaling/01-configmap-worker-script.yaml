@@ -1,0 +1,52 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: worker-script
+  namespace: flock
+  labels:
+    app.kubernetes.io/name: worker
+    app.kubernetes.io/component: app
+    app.kubernetes.io/part-of: flock
+data:
+  worker.sh: |
+    #!/bin/sh
+
+    SHUTDOWN_FLAG=false
+
+    handle_sigterm() {
+      echo "$(date -u +"%Y-%m-%dT%H:%M:%SZ") [${MY_POD_NAME}] Received SIGTERM, setting shutdown flag, will finish current job then shutdown." >&2
+      SHUTDOWN_FLAG=true
+    }
+
+    trap handle_sigterm TERM
+
+    echo "$(date -u +"%Y-%m-%dT%H:%M:%SZ") [${MY_POD_NAME}] Worker script started"
+
+    # Sleep in small chunks, so signal delivery interrupts only a 1-second slice
+    interruptible_sleep() {
+      target_seconds=$1
+      elapsed=0
+      while [ "$elapsed" -lt "$target_seconds" ]; do
+        sleep 1
+        elapsed=$((elapsed + 1))
+      done
+    }
+
+    job_id=1
+    while true; do
+      if [ "$SHUTDOWN_FLAG" = true ]; then
+        echo "$(date -u +"%Y-%m-%dT%H:%M:%SZ") [${MY_POD_NAME}] Shutdown flag set, stopping polling for new jobs." >&2
+        break
+      fi
+
+      sleep_time=$((50 + RANDOM % 11))
+
+      echo "$(date -u +"%Y-%m-%dT%H:%M:%SZ") [${MY_POD_NAME}] Starting job $job_id, sleeping for $sleep_time seconds..." >&2
+      interruptible_sleep "$sleep_time"
+
+      echo "$(date -u +"%Y-%m-%dT%H:%M:%SZ") [${MY_POD_NAME}] Job $job_id completed" >&2
+
+      job_id=$((job_id + 1))
+    done
+
+    echo "$(date -u +"%Y-%m-%dT%H:%M:%SZ") [${MY_POD_NAME}] Graceful shutdown completed" >&2

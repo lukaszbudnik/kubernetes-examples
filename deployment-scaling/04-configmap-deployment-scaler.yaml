@@ -1,0 +1,47 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: deployment-scaler-script
+  namespace: flock
+data:
+  scale-deployment.sh: |
+    #!/bin/sh
+    set -e
+    # Helper function to log with ISO datetime
+    log() {
+        echo "$(date -u +"%Y-%m-%dT%H:%M:%SZ") $1"
+    }
+    log "Checking deployment status..."
+    # Get the current replica count using Kubernetes API
+    TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
+    NAMESPACE="flock"
+    DEPLOYMENT_NAME="worker-pod"
+    
+    # Get deployment information using Kubernetes API
+    DEPLOYMENT_INFO=$(curl -ks https://kubernetes.default.svc/apis/apps/v1/namespaces/$NAMESPACE/deployments/$DEPLOYMENT_NAME \
+      -H "Authorization: Bearer $TOKEN")
+    
+    # Extract current replicas using proper JSON field extraction (no jq)
+    CURRENT_REPLICAS=$(echo "$DEPLOYMENT_INFO" | sed -n 's/.*"replicas":[[:space:]]*\([0-9]*\).*/\1/p' | head -n 1)
+    
+    log "Current replicas: $CURRENT_REPLICAS"
+    
+    # Check if replicas are less than 3 (using shell arithmetic)
+    if [ "$CURRENT_REPLICAS" -lt 3 ]; then
+        log "Scaling deployment to 3 replicas..."
+        
+        # Create patch payload for scaling
+        PATCH_PAYLOAD='{"spec":{"replicas":3}}'
+        
+        # Scale deployment using Kubernetes API
+        curl -ks https://kubernetes.default.svc/apis/apps/v1/namespaces/$NAMESPACE/deployments/$DEPLOYMENT_NAME \
+          -H "Authorization: Bearer $TOKEN" \
+          -H "Content-Type: application/merge-patch+json" \
+          -X PATCH \
+          -d "$PATCH_PAYLOAD"
+        
+        log "Deployment scaled to 3 replicas"
+    else
+        log "Deployment already has sufficient replicas ($CURRENT_REPLICAS)"
+    fi
+    log "Scale check completed"
