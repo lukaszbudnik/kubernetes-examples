@@ -45,6 +45,16 @@ See [network-policies-enforcement/README.md](network-policies-enforcement/README
 
 See [rbac/README.md](rbac/README.md) for details.
 
+### [leader-election/](leader-election/)
+
+**High availability and leader election** using Lease API and sidecar pattern:
+
+- Demonstrate the sidecar leader election pattern in Kubernetes
+- Use a sidecar to manage election and expose leader status to the main application
+- Ensure only one instance performing leader-specific tasks at a time
+
+See [leader-election/README.md](leader-election/README.md) for details.
+
 ### [deployment-scaling/](deployment-scaling/)
 
 **Horizontal scaling, graceful shutdown, and automated scaling** using Kubernetes Deployments:
@@ -56,15 +66,16 @@ See [rbac/README.md](rbac/README.md) for details.
 
 See [deployment-scaling/README.md](deployment-scaling/README.md) for details.
 
-### [leader-election/](leader-election/)
+### [hpa-custom-metrics/](hpa-custom-metrics/)
 
-**High availability and leader election** using Lease API and sidecar pattern:
+**Horizontal scaling based on custom metrics** using HPA and Prometheus:
 
-- Demonstrate the sidecar leader election pattern in Kubernetes
-- Use a sidecar to manage election and expose leader status to the main application
-- Ensure only one instance performing leader-specific tasks at a time
+- Scaling deployments based on standard resource metrics (CPU/Memory)
+- Implementing custom metric scaling (e.g., queue length, request rate)
+- Using the Prometheus Adapter to expose metrics to the Kubernetes API
+- Configuring scaling behaviors like stabilization windows and capped reductions
 
-See [leader-election/README.md](leader-election/README.md) for details.
+See [hpa-custom-metrics/README.md](hpa-custom-metrics/README.md) for details.
 
 ---
 
@@ -147,6 +158,9 @@ kubectl apply -k deployment-scaling/
 
 # High availability leader election
 kubectl apply -k leader-elector/
+
+# Horizontal scaling based on custom metrics
+kubectl apply -k hpa-custom-metrics/
 ```
 
 ---
@@ -191,6 +205,8 @@ kubectl apply -k leader-elector/
 | Concept | Description |
 |---------|-------------|
 | Horizontal Scaling | Adjusting replica count via `kubectl scale` |
+| HPA (Custom Metrics) | Automated scaling via Prometheus & Custom Metrics API |
+| Stabilization Window | Delaying scale-down to prevent thrashing |
 | Automated Scaling | Custom scaling logic via CronJobs and API |
 | SIGTERM | Signal sent to processes for graceful shutdown |
 | Grace Period | Time allowed for cleanup before `SIGKILL` |

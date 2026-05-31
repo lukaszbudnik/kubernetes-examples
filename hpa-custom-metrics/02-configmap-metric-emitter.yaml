@@ -1,0 +1,43 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: metric-emitter-script
+  namespace: hpa-custom
+data:
+  emitter.sh: |
+    #!/bin/sh
+    VALUE=0
+    DIRECTION=1
+    
+    # Create web root
+    mkdir -p /var/www
+    
+    # Start stable httpd in background
+    busybox httpd -p 8080 -h /var/www
+    
+    while true; do
+      if [ $DIRECTION -eq 1 ]; then
+        VALUE=$((VALUE + 1))
+        if [ $VALUE -ge 10 ]; then
+          DIRECTION=-1
+        fi
+      else
+        VALUE=$((VALUE - 3))
+        if [ $VALUE -le 1 ]; then
+          VALUE=1
+          DIRECTION=1
+        fi
+      fi
+      
+      # Use .txt extension so httpd sends Content-Type: text/plain
+      echo "custom_queue_length $VALUE" > /var/www/metrics.txt
+      echo "$(date) - Current metric: queue_length=$VALUE"
+      sleep 60
+
+      if [ $DIRECTION -eq -1 ]; then
+        # when going down we sleep for additional 60s 
+        # this is to give us additional time to observe HPA actions
+        sleep 60
+      fi
+
+    done

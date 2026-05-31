@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: metric-emitter
+  namespace: hpa-custom
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: metric-emitter
+  template:
+    metadata:
+      labels:
+        app: metric-emitter
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics.txt"
+    spec:
+      containers:
+      - name: emitter
+        image: busybox
+        command: ["/bin/sh", "/scripts/emitter.sh"]
+        ports:
+        - containerPort: 8080
+          name: metrics
+        volumeMounts:
+        - name: scripts
+          mountPath: /scripts
+      volumes:
+      - name: scripts
+        configMap:
+          name: metric-emitter-script
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: metric-emitter
+  namespace: hpa-custom
+  labels:
+    app: metric-emitter
+spec:
+  ports:
+  - port: 8080
+    targetPort: 8080
+    name: metrics
+  selector:
+    app: metric-emitter
