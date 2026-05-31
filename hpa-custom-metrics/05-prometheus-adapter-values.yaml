@@ -1,0 +1,13 @@
+# Configuration for the Prometheus Adapter to map our custom metric
+rules:
+  custom:
+  - seriesQuery: '{__name__="custom_queue_length"}'
+    resources:
+      overrides:
+        namespace: {resource: "namespace"}
+        pod: {resource: "pod"}
+        app: {resource: "service"}
+    name:
+      matches: "^custom_queue_length$"
+      as: "custom_queue_length"
+    metricsQuery: 'sum(<<.Series>>) by (<<.GroupBy>>)'
